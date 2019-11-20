@@ -11,7 +11,8 @@ parent_title_en = dcterms:isPartOf / dcterms:title[@en] :: xsd:string ;
 titles = dcterms:title | (dcterms:isPartOf / dcterms:title) | (^dcterms:isPartOf / dcterms:title) :: xsd:string ;
 no_titles = dcterms:title & (dcterms:isPartOf / dcterms:title) & (^dcterms:isPartOf / dcterms:title) :: xsd:string ;
 self = . :: xsd:string ;
-wildcard = * ::xsd:string ;
+str_wildcard = * ::xsd:string ;
+uri_wildcard = * ::xsd:anyURI ;
 child_title = ^dcterms:isPartOf / dcterms:title :: xsd:string ;
 child_description_en = ^dcterms:isPartOf / dcterms:description[@en] :: xsd:string ;
 recursive = (dcterms:isPartOf)* ;
@@ -57,7 +58,8 @@ EOF
       expect(result["parent_title"]).to match_array ["Parent title", "Parent English!", "Parent French!"]
       expect(result["parent_title_en"]).to match_array "Parent English!"
       expect(result["self"]).to match_array(object)
-      expect(result["wildcard"]).to include "Hello, world!", parent
+      expect(result["str_wildcard"]).to include "Hello, world!", parent
+      expect(result["uri_wildcard"]).to include parent
       expect(result["child_title"]).to match_array "Child title"
       expect(result["titles"]).to match_array ["Hello, world!", "Parent title", "Child title", "Parent English!", "Parent French!"]
       expect(result["no_titles"]).to be_empty
@@ -72,6 +74,54 @@ EOF
       expect(result["or_test"]).to match_array(object)
       expect(result["is_test"]).to match_array(object)
       expect(result["is_not_test"]).to be_empty
+    end
+
+    context "when requesting literals" do
+      let(:title) { RDF::Literal.new("Hello, world!") }
+      let(:parent_title) { RDF::Literal.new("Parent title") }
+      let(:child_title) { RDF::Literal.new("Child title") }
+      let(:en_description) { RDF::Literal.new("English!", language: "en") }
+      let(:fr_description) { RDF::Literal.new("French!", language: "fr") }
+      let(:en_parent_title) { RDF::Literal.new("Parent English!", language: "en") }
+      let(:fr_parent_title) { RDF::Literal.new("Parent French!", language: "fr") }
+
+      it "should return literals" do
+        graph << [object, RDF::Vocab::DC.title, title.canonicalize.object]
+        graph << [object, RDF::Vocab::DC.isPartOf, parent]
+        graph << [object, RDF::Vocab::DC.description, en_description]
+        graph << [object, RDF::Vocab::DC.description, fr_description]
+        graph << [object, RDF::URI.new("info:intProperty"), 1]
+        graph << [object, RDF::URI.new("info:intProperty"), "garbage"]
+        graph << [object, RDF::URI.new("info:numericProperty"), "1"]
+        graph << [parent, RDF::Vocab::DC.title, parent_title.canonicalize.object]
+        graph << [child, RDF::Vocab::DC.isPartOf, object]
+        graph << [child, RDF::Vocab::DC.title, child_title.canonicalize.object]
+        graph << [parent, RDF::Vocab::DC.title, en_parent_title]
+        graph << [parent, RDF::Vocab::DC.title, fr_parent_title]
+        graph << [parent, RDF::Vocab::DC.isPartOf, grandparent]
+
+        result = subject.evaluate object, context: graph, maintain_literals: true
+        expect(result["title"]).to match_array RDF::Literal.new("Hello, world!")
+        expect(result["parent_title"]).to match_array [parent_title, en_parent_title, fr_parent_title]
+        expect(result["parent_title_en"]).to match_array en_parent_title
+        expect(result["self"]).to match_array(object.to_s)
+        expect(result["str_wildcard"]).to include title, parent.to_s
+        expect(result["uri_wildcard"]).to include parent
+        expect(result["child_title"]).to match_array child_title
+        expect(result["titles"]).to match_array [title, parent_title, child_title, en_parent_title, fr_parent_title]
+        expect(result["no_titles"]).to be_empty
+        expect(result["recursive"]).to match_array [parent, grandparent]
+        expect(result["en_description"].first.to_s).to eq "English!"
+        expect(result["conditional"]).to match_array parent
+        expect(result["conditional_false"]).to be_empty
+        expect(result["int_value"]).to match_array RDF::Literal::Integer.new("1")
+        expect(result["numeric_value"]).to match_array RDF::Literal::Integer.new("1")
+        expect(result["escaped_string"]).to match_array '\"'
+        expect(result["and_test"]).to be_empty
+        expect(result["or_test"]).to match_array(object)
+        expect(result["is_test"]).to match_array(object)
+        expect(result["is_not_test"]).to be_empty
+      end
     end
   end
 

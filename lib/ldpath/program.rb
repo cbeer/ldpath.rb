@@ -36,10 +36,10 @@ module Ldpath
 
     end
 
-    def evaluate(uri, context: nil, limit_to_context: false)
-      result = Ldpath::Result.new(self, uri, context: context, limit_to_context: limit_to_context)
+    def evaluate(uri, context: nil, limit_to_context: false, maintain_literals: false)
+      result = Ldpath::Result.new(self, uri, context: context, limit_to_context: limit_to_context, maintain_literals: maintain_literals)
       unless filters.empty?
-        return {} unless filters.all? { |f| f.evaluate(result, uri, result.context) }
+        return {} unless filters.all? { |f| f.evaluate(result, uri, result.context, maintain_literals: maintain_literals) }
       end
 
       result.to_hash

@@ -1,7 +1,7 @@
 module Ldpath
   class Selector
-    def evaluate(program, uris, context)
-      return to_enum(:evaluate, program, uris, context) unless block_given?
+    def evaluate(program, uris, context, maintain_literals: false)
+      return to_enum(:evaluate, program, uris, context, maintain_literals: maintain_literals) unless block_given?
       enum_wrap(uris).map do |uri|
         loading program, uri, context
         enum_flatten_one(evaluate_one(uri, context)).each do |x|
@@ -55,15 +55,15 @@ module Ldpath
       @arguments = Array(arguments)
     end
 
-    def evaluate(program, uris, context)
-      return to_enum(:evaluate, program, uris, context) unless block_given?
+    def evaluate(program, uris, context, maintain_literals: false)
+      return to_enum(:evaluate, program, uris, context, maintain_literals: maintain_literals) unless block_given?
 
       enum_wrap(uris).map do |uri|
         loading program, uri, context
         args = arguments.map do |i|
           case i
           when Selector
-            i.evaluate(program, uri, context)
+            i.evaluate(program, uri, context, maintain_literals: maintain_literals)
           else
             i
           end
@@ -138,14 +138,14 @@ module Ldpath
       @repeat = repeat
     end
 
-    def evaluate(program, uris, context)
-      return to_enum(:evaluate, program, uris, context) unless block_given?
+    def evaluate(program, uris, context, maintain_literals: false)
+      return to_enum(:evaluate, program, uris, context, maintain_literals: maintain_literals) unless block_given?
 
       input = enum_wrap(uris)
 
       (0..repeat.max).each_with_index do |i, idx|
         break if input.none? || (repeat.max == Ldpath::Transform::Infinity && idx > 25) # we're probably lost..
-        input = property.evaluate program, input, context
+        input = property.evaluate program, input, context, maintain_literals: maintain_literals
 
         next unless idx >= repeat.min
 
@@ -165,19 +165,20 @@ module Ldpath
   end
 
   class PathSelector < CompoundSelector
-    def evaluate(program, uris, context, &block)
-      return to_enum(:evaluate, program, uris, context) unless block_given?
+    def evaluate(program, uris, context, maintain_literals: false, &block)
+      return to_enum(:evaluate, program, uris, context, maintain_literals: maintain_literals) unless block_given?
 
-      output = left.evaluate(program, uris, context)
-      right.evaluate(program, output, context, &block)
+      output = left.evaluate(program, uris, context, maintain_literals: maintain_literals)
+      right.evaluate(program, output, context, maintain_literals: maintain_literals, &block)
     end
   end
 
   class UnionSelector < CompoundSelector
-    def evaluate(program, uris, context)
-      return to_enum(:evaluate, program, uris, context) unless block_given?
+    def evaluate(program, uris, context, maintain_literals: false)
+      return to_enum(:evaluate, program, uris, context, maintain_literals: maintain_literals) unless block_given?
 
-      enum_union(left.evaluate(program, uris, context), right.evaluate(program, uris, context)).each do |x|
+      enum_union(left.evaluate(program, uris, context, maintain_literals: maintain_literals),
+                 right.evaluate(program, uris, context, maintain_literals: maintain_literals)).each do |x|
         yield x
       end
     end
@@ -198,10 +199,11 @@ module Ldpath
   end
 
   class IntersectionSelector < CompoundSelector
-    def evaluate(program, uris, context)
-      return to_enum(:evaluate, program, uris, context) unless block_given?
+    def evaluate(program, uris, context, maintain_literals: false)
+      return to_enum(:evaluate, program, uris, context, maintain_literals: maintain_literals) unless block_given?
 
-      result = left.evaluate(program, uris, context).to_a & right.evaluate(program, uris, context).to_a
+      result = left.evaluate(program, uris, context, maintain_literals: maintain_literals).to_a &
+               right.evaluate(program, uris, context, maintain_literals: maintain_literals).to_a
 
       result.each do |x|
         yield x
@@ -216,10 +218,11 @@ module Ldpath
       @tap = tap
     end
 
-    def evaluate(program, uris, context)
-      return to_enum(:evaluate, program, uris, context) unless block_given?
+    def evaluate(program, uris, context, maintain_literals: false)
+      return to_enum(:evaluate, program, uris, context, maintain_literals: maintain_literals) unless block_given?
 
-      program.meta[identifier] = tap.evaluate(program, uris, context).map { |x| RDF::Literal.new(x.to_s).canonicalize.object }
+      program.meta[identifier] = tap.evaluate(program, uris, context, maintain_literals: maintain_literals)
+                                    .map { |x| RDF::Literal.new(x.to_s).canonicalize.object }
 
       enum_wrap(uris).map do |uri|
         loading program, uri, context

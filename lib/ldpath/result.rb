@@ -3,13 +3,14 @@ module Ldpath
     include Ldpath::Functions
     attr_reader :program, :uri, :cache, :loaded
 
-    def initialize(program, uri, cache: RDF::Util::Cache.new, context: nil, limit_to_context: false)
+    def initialize(program, uri, cache: RDF::Util::Cache.new, context: nil, limit_to_context: false, maintain_literals: false)
       @program = program
       @uri = uri
       @cache = cache
       @loaded = {}
       @context = context
       @limit_to_context = limit_to_context
+      @maintain_literals = maintain_literals
     end
 
     def loading(uri, context)
@@ -59,7 +60,7 @@ module Ldpath
     private
 
     def evaluate(mapping)
-      mapping.evaluate(self, uri, context)
+      mapping.evaluate(self, uri, context, maintain_literals: maintain_literals?)
     end
 
     def function_method?(function)
@@ -72,6 +73,10 @@ module Ldpath
 
     def limit_to_context?
       @limit_to_context
+    end
+
+    def maintain_literals?
+      @maintain_literals
     end
   end
 end

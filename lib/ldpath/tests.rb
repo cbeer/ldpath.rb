@@ -7,12 +7,12 @@ module Ldpath
       @test = test
     end
 
-    def evaluate(program, uris, context)
-      return to_enum(:evaluate, program, uris, context) unless block_given?
+    def evaluate(program, uris, context, maintain_literals: false)
+      return to_enum(:evaluate, program, uris, context, maintain_literals: maintain_literals) unless block_given?
 
-      entries = delegate.evaluate program, uris, context
+      entries = delegate.evaluate program, uris, context, maintain_literals: maintain_literals
       entries.select do |uri|
-        result = enum_wrap(test.evaluate(program, uri, context)).any? do |x|
+        result = enum_wrap(test.evaluate(program, uri, context, maintain_literals: maintain_literals)).any? do |x|
           x
         end
         yield uri if result
@@ -26,7 +26,7 @@ module Ldpath
       @lang = lang
     end
 
-    def evaluate(_program, uri, _context)
+    def evaluate(_program, uri, _context, maintain_literals: false)
       return unless uri.literal?
 
       uri if (lang.to_s == "none" && !uri.has_language?) || uri.language.to_s == lang.to_s
@@ -39,7 +39,7 @@ module Ldpath
       @type = type
     end
 
-    def evaluate(program, uri, _context)
+    def evaluate(program, uri, _context, maintain_literals: false)
       return unless uri.literal?
 
       uri if uri.has_datatype? && uri.datatype == type
@@ -53,8 +53,8 @@ module Ldpath
       @delegate = delegate
     end
 
-    def evaluate(program, uri, context)
-      !enum_wrap(delegate.evaluate(program, uri, context)).any? { |x| x }
+    def evaluate(program, uri, context, maintain_literals: false)
+      !enum_wrap(delegate.evaluate(program, uri, context, maintain_literals: maintain_literals)).any? { |x| x }
     end
   end
 
@@ -66,8 +66,9 @@ module Ldpath
       @right = right
     end
 
-    def evaluate(program, uri, context)
-      left.evaluate(program, uri, context).any? || right.evaluate(program, uri, context).any?
+    def evaluate(program, uri, context, maintain_literals: false)
+      left.evaluate(program, uri, context, maintain_literals: maintain_literals).any? ||
+        right.evaluate(program, uri, context, maintain_literals: maintain_literals).any?
     end
   end
 
@@ -79,9 +80,9 @@ module Ldpath
       @right = right
     end
 
-    def evaluate(program, uri, context)
-      left.evaluate(program, uri, context).any? &&
-        right.evaluate(program, uri, context).any?
+    def evaluate(program, uri, context, maintain_literals: false)
+      left.evaluate(program, uri, context, maintain_literals: maintain_literals).any? &&
+        right.evaluate(program, uri, context, maintain_literals: maintain_literals).any?
     end
   end
 
@@ -93,8 +94,8 @@ module Ldpath
       @right = right
     end
 
-    def evaluate(program, uri, context)
-      left.evaluate(program, uri, context).include?(right)
+    def evaluate(program, uri, context, maintain_literals: false)
+      left.evaluate(program, uri, context, maintain_literals: maintain_literals).include?(right)
     end
   end
 end

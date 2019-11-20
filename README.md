@@ -36,7 +36,7 @@ context = RDF::Graph.new << [uri, RDF::Vocab::DC.title, "Some Title"]
 
 program = Ldpath::Program.parse my_program
 output = program.evaluate uri, context: context
-# => { ... }
+# => {"title"=>["Some Title"]}
 ```
 
 ## Compatibility
