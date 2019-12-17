@@ -35,7 +35,7 @@ uri = RDF::URI.new "info:a"
 context = RDF::Graph.new << [uri, RDF::Vocab::DC.title, "Some Title"]
 
 program = Ldpath::Program.parse my_program
-output = program.evaluate uri, context
+output = program.evaluate uri, context: context
 # => { ... }
 ```
 
