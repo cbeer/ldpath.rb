@@ -1,3 +1,5 @@
+# Parslet parser for parsing ldpath programs.
+# @see https://kschiess.github.io/parslet/parser.html Parslet arser documentation
 require 'parslet'
 
 module Ldpath
