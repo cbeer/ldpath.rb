@@ -1,3 +1,8 @@
+### 1.1.0 (2020-01-21)
+
+* replace linkeddata dependency with rdf and nokogiri
+* update dependency on bundler to ~> 2.0
+
 ### 1.0.1 (2019-04-23)
 
 * remove version restriction for linkeddata dependency
