@@ -8,6 +8,8 @@ This is a ruby implementation of [LDPath](http://marmotta.apache.org/ldpath/lang
 
 ## Installation
 
+### Required gem installation
+
 Add this line to your application's Gemfile:
 
     gem 'ldpath'
@@ -19,6 +21,10 @@ And then execute:
 Or install it yourself as:
 
     $ gem install ldpath
+
+### Additional gem installations
+
+To support RDF serializations, you will need to either install the [linkeddata gem](https://github.com/ruby-rdf/linkeddata) which installs a large set of RDF serializations or, in order to have a smaller dependency footprint, install gems for only the serializations your plan to use in your app.  The list of serializations are in the [README](https://github.com/ruby-rdf/linkeddata/blob/develop/README.md#features) for the linkeddata gem.
 
 ## Usage
 
